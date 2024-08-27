@@ -3,7 +3,7 @@ import requests
 import socket
 import time
 
-API_URL = 'http://<YOUR_API_SERVER_IP>:5000/report'  # Replace with your API server URL
+API_URL = 'http://127.0.0.1:5000/report'  # Replace with your API server URL
 
 def get_local_ip():
     try:
