@@ -1,38 +1,68 @@
 import streamlit as st
-import requests
-import socket
-import time
+import streamlit.components.v1 as components
 
-API_URL = 'http://127.0.0.1:5000/report'  # Replace with your API server URL
+# HTML and JavaScript code
+html_code = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Local IP Detection</title>
+</head>
+<body>
+    <h1>Local IP Detection</h1>
+    <div id="local-ip">Detecting...</div>
+    <script>
+        function getLocalIPs(callback) {
+            var ips = [];
+            var pc = new RTCPeerConnection({iceServers: []});
+            pc.createDataChannel('');
+            
+            pc.createOffer().then(function(sdp) {
+                return pc.setLocalDescription(sdp);
+            }).catch(function(error) {
+                console.error('Error creating offer:', error);
+            });
 
-def get_local_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0)
-        s.connect(('8.8.8.8', 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-    except Exception:
-        local_ip = "Unable to determine local IP"
-    return local_ip
+            pc.onicecandidate = function(event) {
+                if (event.candidate) {
+                    var ip = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(event.candidate.candidate);
+                    if (ip) {
+                        ips.push(ip[0]);
+                        console.log('Detected IP:', ip[0]);
+                        document.getElementById('local-ip').innerText = 'Local IP Addresses: ' + ips.join(', ');
+                        window.parent.postMessage({type: 'local_ip', ips: ips}, '*');
+                    }
+                }
+            };
 
-st.title("User Interface")
-user_name = st.text_input("Enter your name", "")
-local_ip = get_local_ip()
+            setTimeout(() => {
+                if (ips.length === 0) {
+                    document.getElementById('local-ip').innerText = 'Local IP Addresses: No IP detected';
+                    window.parent.postMessage({type: 'local_ip', ips: ['No IP detected']}, '*');
+                }
+            }, 5000); // Adjust timeout as necessary
+        }
 
-st.write(f"Your local IP address is: {local_ip}")
+        document.addEventListener("DOMContentLoaded", function() {
+            getLocalIPs(function(ips) {
+                // Callback to update IPs
+            });
+        });
 
-if st.button("Start"):
-    if not user_name:
-        st.warning("Please enter your name.")
-    else:
-        # Report IP to API
-        response = requests.post(API_URL, json={'ip_address': local_ip})
-        if response.status_code == 200:
-            st.success("IP address reported successfully.")
-        else:
-            st.error("Failed to report IP address.")
+        window.addEventListener("message", function(event) {
+            if (event.data.type === 'local_ip') {
+                window.parent.postMessage({type: 'local_ip', ips: event.data.ips}, '*');
+            }
+        });
+    </script>
+</body>
+</html>
+"""
 
-if st.button("Stop"):
-    # Optionally, handle stopping logic
-    st.write("Stopping functionality not implemented.")
+# Streamlit app
+def main():
+    st.title("Local IP Detection")
+    components.html(html_code, height=600)
+
+if __name__ == "__main__":
+    main()
