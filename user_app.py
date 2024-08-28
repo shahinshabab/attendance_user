@@ -1,6 +1,6 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
-import time
 
 # Define the HTML and JavaScript code
 html_code = """
@@ -30,12 +30,18 @@ html_code = """
                     if (ip) {
                         ips.push(ip[0]);
                         document.getElementById('local-ip').innerText = 'Local IP Addresses: ' + ips.join(', ');
-                        
-                        // Send IPs to Streamlit using a hidden form
-                        var xhr = new XMLHttpRequest();
-                        xhr.open('POST', '/update_ips', true);
-                        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                        xhr.send('ips=' + encodeURIComponent(ips.join(',')));
+
+                        // Use a hidden form to send data to Streamlit
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '/';
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'ips';
+                        input.value = ips.join(',');
+                        form.appendChild(input);
+                        document.body.appendChild(form);
+                        form.submit();
                     }
                 }
             };
@@ -43,10 +49,16 @@ html_code = """
             setTimeout(() => {
                 if (ips.length === 0) {
                     document.getElementById('local-ip').innerText = 'Local IP Addresses: No IP detected';
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/update_ips', true);
-                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                    xhr.send('ips=No%20IP%20detected');
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/';
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ips';
+                    input.value = 'No IP detected';
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             }, 5000); // Adjust timeout as necessary
         }
@@ -59,44 +71,28 @@ html_code = """
 </html>
 """
 
-def update_ips():
-    """Handle IP address updates."""
-    import streamlit.server.server as server
-    from streamlit.server.server import Server
-
-    server = Server.get_current()
-    if server:
-        # Extract the IP addresses from request data
-        request = server.get_request()
-        ip_addresses = request.form.get('ips', '')
-        st.session_state.ips = ip_addresses.split(',')
-        st.experimental_rerun()  # Rerun the app to update the DataFrame
-
-# Define the Streamlit app
 def main():
     st.title("Local IP Detection")
     
-    # Display the HTML
+    # Display the HTML content
     components.html(html_code, height=600)
-
-    # Update IPs from session state
-    if 'ips' not in st.session_state:
-        st.session_state.ips = []
-
+    
     # Initialize or update DataFrame
     if 'df' not in st.session_state:
         st.session_state.df = pd.DataFrame(columns=["IP Address"])
 
-    if st.session_state.ips:
-        # Append new IPs to DataFrame
-        for ip in st.session_state.ips:
+    # Process form data
+    if st.experimental_get_query_params().get('ips'):
+        ips = st.experimental_get_query_params().get('ips', [''])[0]
+        
+        # Add new IPs to the DataFrame
+        for ip in ips.split(','):
             new_entry = {"IP Address": ip}
             st.session_state.df = st.session_state.df.append(new_entry, ignore_index=True)
-        st.write("Detected IP Addresses:")
-        st.dataframe(st.session_state.df)
 
-    # Check for updates from JavaScript
-    st.write(f"IPs received: {st.session_state.ips}")
+    # Display DataFrame
+    st.write("Detected IP Addresses:")
+    st.dataframe(st.session_state.df)
 
 if __name__ == "__main__":
     main()
