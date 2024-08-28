@@ -22,6 +22,7 @@
     </div>
     <script>
         let isDetecting = false;
+        let ipDetected = false;
 
         function getLocalIPs(callback) {
             const ips = [];
@@ -38,6 +39,12 @@
                     }
                 }
             };
+            // Fallback if no IP is detected
+            setTimeout(() => {
+                if (ips.length === 0 && !ipDetected) {
+                    callback("No IP detected");
+                }
+            }, 5000); // Timeout for IP detection
         }
 
         function sendIPToServer(ip, name) {
@@ -58,8 +65,10 @@
         document.getElementById('start-btn').addEventListener('click', () => {
             if (!isDetecting) {
                 isDetecting = true;
+                ipDetected = false;
                 document.getElementById('status').innerText = 'Status: Detecting...';
                 getLocalIPs(ip => {
+                    ipDetected = true;
                     const name = document.getElementById('name').value || 'Anonymous';
                     document.getElementById('ip-address').innerText = 'Local IP Address: ' + ip;
                     sendIPToServer(ip, name);
