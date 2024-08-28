@@ -84,6 +84,7 @@ def main():
 
     if ips:
         # Append new IP to DataFrame
+        st.write("ip detected")
         new_entry = {"IP Address": ips}
         st.session_state.df = st.session_state.df.append(new_entry, ignore_index=True)
         st.write("Detected IP Addresses:")
