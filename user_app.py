@@ -1,7 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import pandas as pd
 
-# HTML and JavaScript code
+# Define the HTML and JavaScript code
 html_code = """
 <!DOCTYPE html>
 <html>
@@ -30,7 +31,8 @@ html_code = """
                         ips.push(ip[0]);
                         console.log('Detected IP:', ip[0]);
                         document.getElementById('local-ip').innerText = 'Local IP Addresses: ' + ips.join(', ');
-                        window.parent.postMessage({type: 'local_ip', ips: ips}, '*');
+                        // Send IPs to Streamlit via query parameters
+                        window.location.href = window.location.href.split('?')[0] + '?ips=' + encodeURIComponent(ips.join(','));
                     }
                 }
             };
@@ -38,7 +40,7 @@ html_code = """
             setTimeout(() => {
                 if (ips.length === 0) {
                     document.getElementById('local-ip').innerText = 'Local IP Addresses: No IP detected';
-                    window.parent.postMessage({type: 'local_ip', ips: ['No IP detected']}, '*');
+                    window.location.href = window.location.href.split('?')[0] + '?ips=No%20IP%20detected';
                 }
             }, 5000); // Adjust timeout as necessary
         }
@@ -48,21 +50,30 @@ html_code = """
                 // Callback to update IPs
             });
         });
-
-        window.addEventListener("message", function(event) {
-            if (event.data.type === 'local_ip') {
-                window.parent.postMessage({type: 'local_ip', ips: event.data.ips}, '*');
-            }
-        });
     </script>
 </body>
 </html>
 """
 
-# Streamlit app
 def main():
     st.title("Local IP Detection")
+
+    # Display the HTML
     components.html(html_code, height=600)
+
+    # Retrieve IPs from query parameters
+    query_params = st.experimental_get_query_params()
+    ips = query_params.get('ips', [''])[0]
+
+    # Initialize or update DataFrame
+    if 'df' not in st.session_state:
+        st.session_state.df = pd.DataFrame(columns=["IP Address"])
+
+    if ips:
+        new_entry = {"IP Address": ips}
+        st.session_state.df = st.session_state.df.append(new_entry, ignore_index=True)
+        st.write("Detected IP Addresses:")
+        st.dataframe(st.session_state.df)
 
 if __name__ == "__main__":
     main()
