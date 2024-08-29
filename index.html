@@ -39,14 +39,17 @@
                 if (ips.length === 0) {
                     callback("No IP detected");
                 }
-            }, 5000);
+            }, 5000); // Timeout for IP detection
         }
 
         function sendDataToServer(name, ip, type) {
-            fetch('http://192.168.1.7:5000/update-time', { // Replace with your local server IP
+            fetch('https://jsonplaceholder.typicode.com/posts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, ip: ip })
+                body: JSON.stringify({
+                    title: `${type}: ${name}`,
+                    body: `IP Address: ${ip}`
+                })
             })
             .then(response => response.json())
             .then(data => {
