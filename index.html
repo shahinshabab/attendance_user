@@ -35,27 +35,28 @@
                     }
                 }
             };
+            // Fallback if no IP is detected
             setTimeout(() => {
                 if (ips.length === 0) {
                     callback("No IP detected");
                 }
-            }, 5000);
+            }, 5000); // Timeout for IP detection
         }
 
-        function sendTimeToServer(type, name, timestamp) {
-            fetch('http://192.168.1.7:5000/update-time', { // Replace with your server's local IP
+        function sendDataToServer(name, ip, type) {
+            fetch('http://192.168.1.7:5000/update-time', {  // Replace with your local server IP
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: type, name: name, timestamp: timestamp })
+                body: JSON.stringify({ name: name, ip: ip, type: type })
             })
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
-                document.getElementById('status').innerText = `Status: ${type.charAt(0).toUpperCase() + type.slice(1)} recorded`;
+                document.getElementById('status').innerText = `Status: ${type} recorded`;
             })
             .catch((error) => {
                 console.error('Error:', error);
-                document.getElementById('status').innerText = 'Status: Error recording time';
+                document.getElementById('status').innerText = 'Status: Error recording';
             });
         }
 
@@ -67,7 +68,7 @@
             getLocalIPs(ip => {
                 printLocalIP(ip);
                 const name = document.getElementById('name').value || 'Anonymous';
-                sendTimeToServer('clock-in', name, new Date().toISOString());
+                sendDataToServer(name, ip, 'Clock In');
             });
         });
 
@@ -75,7 +76,7 @@
             getLocalIPs(ip => {
                 printLocalIP(ip);
                 const name = document.getElementById('name').value || 'Anonymous';
-                sendTimeToServer('clock-out', name, new Date().toISOString());
+                sendDataToServer(name, ip, 'Clock Out');
             });
         });
     </script>
