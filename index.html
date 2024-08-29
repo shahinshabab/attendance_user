@@ -4,114 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Clock In/Out</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f4;
-        }
-        .container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 300px;
-            text-align: center;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        .buttons {
-            margin: 20px 0;
-        }
-        .buttons button {
-            padding: 10px 20px;
-            margin: 0 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .buttons button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <h1>Employee Clock In/Out</h1>
         <div class="form-group">
-            <label for="name">Employee Name:</label>
+            <label for="name">Name:</label>
             <input type="text" id="name" placeholder="Enter your name">
         </div>
         <div class="buttons">
             <button id="clock-in-btn">Clock In</button>
-            <button id="clock-out-btn" disabled>Clock Out</button>
+            <button id="clock-out-btn">Clock Out</button>
         </div>
-        <div id="status">Status: Ready to Clock In</div>
+        <div id="status">Status: Waiting...</div>
+        <div id="ip-address">Local IP Address: Not detected</div>
     </div>
     <script>
-        let clockedIn = false;
-
-        function sendTimeToServer(timeType, name) {
-            const url = 'http://192.168.1.7:5000/update-time'; // Replace with your API URL
-            const data = {
-                type: timeType,
-                name: name,
-                timestamp: new Date().toISOString()
+        function getLocalIPs(callback) {
+            const ips = [];
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            pc.onicecandidate = event => {
+                if (event.candidate) {
+                    const ipMatch = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(event.candidate.candidate);
+                    if (ipMatch) {
+                        ips.push(ipMatch[0]);
+                        callback(ips[0]);
+                        pc.onicecandidate = () => {}; // Clean up
+                    }
+                }
             };
+            setTimeout(() => {
+                if (ips.length === 0) {
+                    callback("No IP detected");
+                }
+            }, 5000);
+        }
 
-            fetch(url, {
+        function sendTimeToServer(type, name, timestamp) {
+            fetch('http://192.168.1.7:5000/update-time', { // Replace with your server's local IP
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify({ type: type, name: name, timestamp: timestamp })
             })
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
+                document.getElementById('status').innerText = `Status: ${type.charAt(0).toUpperCase() + type.slice(1)} recorded`;
             })
             .catch((error) => {
                 console.error('Error:', error);
+                document.getElementById('status').innerText = 'Status: Error recording time';
             });
         }
 
+        function printLocalIP(ip) {
+            document.getElementById('ip-address').innerText = 'Local IP Address: ' + ip;
+        }
+
         document.getElementById('clock-in-btn').addEventListener('click', () => {
-            if (!clockedIn) {
-                clockedIn = true;
+            getLocalIPs(ip => {
+                printLocalIP(ip);
                 const name = document.getElementById('name').value || 'Anonymous';
-                document.getElementById('status').innerText = 'Status: Clocked In';
-                document.getElementById('clock-out-btn').disabled = false;
-                sendTimeToServer('clock-in', name);
-            }
+                sendTimeToServer('clock-in', name, new Date().toISOString());
+            });
         });
 
         document.getElementById('clock-out-btn').addEventListener('click', () => {
-            if (clockedIn) {
-                clockedIn = false;
+            getLocalIPs(ip => {
+                printLocalIP(ip);
                 const name = document.getElementById('name').value || 'Anonymous';
-                document.getElementById('status').innerText = 'Status: Clocked Out';
-                document.getElementById('clock-out-btn').disabled = true;
-                sendTimeToServer('clock-out', name);
-            }
+                sendTimeToServer('clock-out', name, new Date().toISOString());
+            });
         });
     </script>
 </body>
