@@ -35,19 +35,18 @@
                     }
                 }
             };
-            // Fallback if no IP is detected
             setTimeout(() => {
                 if (ips.length === 0) {
                     callback("No IP detected");
                 }
-            }, 5000); // Timeout for IP detection
+            }, 5000);
         }
 
         function sendDataToServer(name, ip, type) {
-            fetch('http://192.168.1.7:5000/update-time', {  // Replace with your local server IP
+            fetch('http://192.168.1.100:5000/update-time', { // Replace with your local server IP
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, ip: ip, type: type })
+                body: JSON.stringify({ name: name, ip: ip })
             })
             .then(response => response.json())
             .then(data => {
