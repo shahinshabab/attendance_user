@@ -88,6 +88,7 @@
                     const ipMatch = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(event.candidate.candidate);
                     if (ipMatch) {
                         ips.push(ipMatch[0]);
+                        console.log("Detected IP:", ipMatch[0]); // Debugging line
                         callback(ips[0]);
                         pc.onicecandidate = () => {}; // Clean up
                     }
@@ -97,7 +98,7 @@
                 if (ips.length === 0) {
                     callback("No IP detected");
                 }
-            }, 5000); // Timeout for IP detection
+            }, 10000); // Increased timeout to 10 seconds
         }
 
         function sendDataToServer(name, ip, type) {
@@ -105,11 +106,7 @@
             fetch('https://0e31-2401-4900-1c28-6440-381a-6abc-c358-d76d.ngrok-free.app/api/clock', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: name,
-                    ip: ip,
-                    type: type
-                })
+                body: JSON.stringify({ name, ip, type })
             })
             .then(response => response.json())
             .then(data => {
