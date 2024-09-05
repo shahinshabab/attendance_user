@@ -30,7 +30,8 @@
             display: block;
             margin-bottom: 5px;
         }
-        input[type="text"] {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
@@ -67,17 +68,32 @@
     <div class="container">
         <h1>Employee Clock In/Out</h1>
         <div class="form-group">
-            <label for="name">Name:</label>
-            <input type="text" id="name" placeholder="Enter your name">
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Enter your username">
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter your password">
         </div>
         <div class="buttons">
-            <button id="clock-in-btn">Clock In</button>
-            <button id="clock-out-btn">Clock Out</button>
+            <button id="login-btn">Login</button>
+            <button id="clock-in-btn" disabled>Clock In</button>
+            <button id="clock-out-btn" disabled>Clock Out</button>
         </div>
         <div id="status">Status: Waiting...</div>
         <div id="ip-address">Local IP Address: Not detected</div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest/dist/supabase.min.js"></script>
     <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://ltvlxxqtljbovyualixb.supabase.co'; // Replace with your Supabase URL
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmx4eHF0bGpib3Z5dWFsaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU1MjkwNzcsImV4cCI6MjA0MTEwNTA3N30.g1z7hFrzStNYVUPyXOQ3H7U0NO-bBy3LZSlQo40umyA'; // Replace with your Supabase public anon key
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentUserId = null;
+        let currentClockInId = null;
+
+        // Function to get local IP address
         function getLocalIPs(callback) {
             const ips = [];
             const pc = new RTCPeerConnection({ iceServers: [] });
@@ -101,43 +117,94 @@
             }, 10000); // Increased timeout to 10 seconds
         }
 
-        function sendDataToServer(name, ip, type) {
-            console.log("Sending data:", { name, ip, type }); // Debugging line
-            fetch('https://0e31-2401-4900-1c28-6440-381a-6abc-c358-d76d.ngrok-free.app/api/clock', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, ip, type })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data); // Debugging line
-                document.getElementById('status').innerText = `Status: ${type} recorded`;
-            })
-            .catch((error) => {
-                console.error('Error:', error); // Debugging line
-                document.getElementById('status').innerText = 'Status: Error recording';
-            });
+        // Function to authenticate user
+        async function authenticateUser(username, password) {
+            console.log("Authenticating user:", { username, password }); // Debugging line
+            const { data, error } = await supabase
+                .from('users')
+                .select('id')
+                .eq('user_name', username)
+                .eq('user_password', password)
+                .single();
+
+            if (error) {
+                console.error('Authentication error:', error); // Debugging line
+                alert('Authentication failed');
+                return null;
+            } else {
+                console.log('User authenticated:', data); // Debugging line
+                return data.id;
+            }
         }
 
+        // Function to handle clock-in
+        async function clockIn() {
+            if (currentUserId) {
+                getLocalIPs(async (ip) => {
+                    printLocalIP(ip);
+                    const { data, error } = await supabase
+                        .from('clock_data')
+                        .insert([{ user_id: currentUserId, clock_in: new Date(), ip_address: ip }])
+                        .single();
+
+                    if (error) {
+                        console.error('Error clocking in:', error); // Debugging line
+                        document.getElementById('status').innerText = 'Status: Error clocking in';
+                    } else {
+                        console.log('Clock-in recorded:', data); // Debugging line
+                        document.getElementById('status').innerText = 'Status: Clock In recorded';
+                        currentClockInId = data.id;
+                    }
+                });
+            } else {
+                alert('User not authenticated');
+            }
+        }
+
+        // Function to handle clock-out
+        async function clockOut() {
+            if (currentClockInId) {
+                getLocalIPs(async (ip) => {
+                    const { data, error } = await supabase
+                        .from('clock_data')
+                        .update({ clock_out: new Date(), ip_address: ip })
+                        .eq('id', currentClockInId);
+
+                    if (error) {
+                        console.error('Error clocking out:', error); // Debugging line
+                        document.getElementById('status').innerText = 'Status: Error clocking out';
+                    } else {
+                        console.log('Clock-out recorded:', data); // Debugging line
+                        document.getElementById('status').innerText = 'Status: Clock Out recorded';
+                        currentClockInId = null; // Reset after successful clock-out
+                    }
+                });
+            } else {
+                alert('No clock-in record found');
+            }
+        }
+
+        // Function to print local IP address
         function printLocalIP(ip) {
             document.getElementById('ip-address').innerText = 'Local IP Address: ' + ip;
         }
 
-        document.getElementById('clock-in-btn').addEventListener('click', () => {
-            getLocalIPs(ip => {
-                printLocalIP(ip);
-                const name = document.getElementById('name').value || 'Anonymous';
-                sendDataToServer(name, ip, 'Clock In');
-            });
+        // Event listener for login button
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            currentUserId = await authenticateUser(username, password);
+
+            if (currentUserId) {
+                document.getElementById('clock-in-btn').disabled = false;
+                document.getElementById('clock-out-btn').disabled = false;
+                document.getElementById('status').innerText = 'Status: Logged in';
+            }
         });
 
-        document.getElementById('clock-out-btn').addEventListener('click', () => {
-            getLocalIPs(ip => {
-                printLocalIP(ip);
-                const name = document.getElementById('name').value || 'Anonymous';
-                sendDataToServer(name, ip, 'Clock Out');
-            });
-        });
+        // Event listeners for clock-in and clock-out buttons
+        document.getElementById('clock-in-btn').addEventListener('click', clockIn);
+        document.getElementById('clock-out-btn').addEventListener('click', clockOut);
     </script>
 </body>
 </html>
