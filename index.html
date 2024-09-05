@@ -83,11 +83,13 @@
         <div id="status">Status: Waiting...</div>
         <div id="ip-address">Local IP Address: Not detected</div>
     </div>
+    <!-- Load Supabase library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest/dist/supabase.min.js"></script>
+    <!-- Your custom script -->
     <script>
         // Initialize Supabase client
-        const supabaseUrl = 'https://ltvlxxqtljbovyualixb.supabase.co'; // Replace with your Supabase URL
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmx4eHF0bGpib3Z5dWFsaXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU1MjkwNzcsImV4cCI6MjA0MTEwNTA3N30.g1z7hFrzStNYVUPyXOQ3H7U0NO-bBy3LZSlQo40umyA'; // Replace with your Supabase public anon key
+        const supabaseUrl = 'https://your-project.supabase.co'; // Replace with your Supabase URL
+        const supabaseKey = 'your-public-anon-key'; // Replace with your Supabase public anon key
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentUserId = null;
@@ -208,4 +210,3 @@
     </script>
 </body>
 </html>
-
