@@ -52,11 +52,6 @@ html_code = f"""
 </html>
 """
 
-# Render HTML with JavaScript in the Streamlit app
-st.markdown(html_code, unsafe_allow_html=True)
-
-</html>
-"""
 
 # Render HTML with JavaScript in the Streamlit app
 st.markdown(html_code, unsafe_allow_html=True)
