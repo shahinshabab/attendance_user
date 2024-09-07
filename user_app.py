@@ -23,32 +23,38 @@ html_code = f"""
         const serverUrl = '{server_url}';
         
         // Define the data to send
-        const predefinedData = {
+        const predefinedData = {{
             key1: 'value1',
             key2: 'value2'
-        };
+        }};
         
-        function sendRequest() {
+        function sendRequest() {{
             // Send the request using Fetch API
-            fetch(serverUrl, {
+            fetch(serverUrl, {{
                 method: 'POST',
-                headers: {
+                headers: {{
                     'Content-Type': 'application/json'
-                },
+                }},
                 body: JSON.stringify(predefinedData)
-            })
+            }})
             .then(response => response.text())
-            .then(text => {
+            .then(text => {{
                 // Display the response
                 document.getElementById('response').innerText = 'Response from server: ' + text;
-            })
-            .catch(error => {
+            }})
+            .catch(error => {{
                 // Handle errors
                 document.getElementById('response').innerText = 'Error: ' + error;
-            });
-        }
+            }});
+        }}
     </script>
 </body>
+</html>
+"""
+
+# Render HTML with JavaScript in the Streamlit app
+st.markdown(html_code, unsafe_allow_html=True)
+
 </html>
 """
 
