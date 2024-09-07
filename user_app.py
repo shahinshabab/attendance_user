@@ -1,26 +1,56 @@
 import streamlit as st
-import requests
-import json
 
-st.title('Send JSON Data')
+# Define the URL of your local server
+server_url = 'http://192.168.1.14:5000/'
 
-# Input fields for JSON data
-key1 = st.text_input('Key 1')
-value1 = st.text_input('Value 1')
-key2 = st.text_input('Key 2')
-value2 = st.text_input('Value 2')
+# Streamlit app layout
+st.title('Send HTTP Request with JavaScript')
 
-if st.button('Send JSON Request'):
-    # Create JSON data
-    data = {
-        key1: value1,
-        key2: value2
-    }
-    # Replace <your-local-ip>:5000 with your server URL
-    url = 'http://192.168.1.14:5000/'
+# HTML and JavaScript embedded in the Streamlit app
+html_code = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Send Request</title>
+</head>
+<body>
+    <h2>Send HTTP Request</h2>
+    <button onclick="sendRequest()">Send Request</button>
+    <p id="response"></p>
     
-    try:
-        response = requests.post(url, json=data)
-        st.write('Response from server:', response.text)
-    except requests.RequestException as e:
-        st.error(f'Error: {e}')
+    <script>
+        // Define the server URL from the Streamlit app
+        const serverUrl = '{server_url}';
+        
+        function sendRequest() {
+            // Create the data to send
+            const data = {
+                key1: 'value1',
+                key2: 'value2'
+            };
+            
+            // Send the request using Fetch API
+            fetch(serverUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.text())
+            .then(text => {
+                // Display the response
+                document.getElementById('response').innerText = 'Response from server: ' + text;
+            })
+            .catch(error => {
+                // Handle errors
+                document.getElementById('response').innerText = 'Error: ' + error;
+            });
+        }
+    </script>
+</body>
+</html>
+"""
+
+# Render HTML with JavaScript in the Streamlit app
+st.markdown(html_code, unsafe_allow_html=True)
