@@ -22,20 +22,20 @@ html_code = f"""
         // Define the server URL from the Streamlit app
         const serverUrl = '{server_url}';
         
+        // Define the data to send
+        const predefinedData = {
+            key1: 'value1',
+            key2: 'value2'
+        };
+        
         function sendRequest() {
-            // Create the data to send
-            const data = {
-                key1: 'value1',
-                key2: 'value2'
-            };
-            
             // Send the request using Fetch API
             fetch(serverUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(predefinedData)
             })
             .then(response => response.text())
             .then(text => {
